@@ -24,8 +24,13 @@ impl RustSample {
         self.number -= num;
     }
 
-    fn append_string_slice(&mut self, s: &str) {
-        self.str = format!("{}{}", self.str, s);
+    fn append_string(&mut self, s: *const libc::c_char) {
+        unsafe {
+            match std::ffi::CStr::from_ptr(s).to_str() {
+                Ok(s2) => self.str = format!("{}{}", self.str, s2),
+                _ => {},
+            }
+        }
     }
 
     fn print_chars(&self) {
@@ -52,7 +57,7 @@ pub unsafe fn create_rust_sample_instance(buffer: *mut *const (), buffer_size: u
         RustSample::get_current_value as fn (&RustSample) -> i32 as *const(),
         RustSample::add as fn (&mut RustSample, num: i32) as *const(),
         RustSample::sub as fn (&mut RustSample, num: i32) as *const(),
-        RustSample::append_string_slice as fn (&mut RustSample, s: &str) as *const(),
+        RustSample::append_string as fn (&mut RustSample, s: *const libc::c_char) as *const(),
         RustSample::print_chars as fn (&RustSample) as *const(),
     ];
 
@@ -97,18 +102,18 @@ mod tests {
             let p = *buffer as *mut RustSample;
             let fn_destroy= std::mem::transmute::<_, fn (&mut RustSample)>(*(buffer.add(1)));
             let fn_get_current_value = std::mem::transmute::<_, fn (&RustSample) -> i32>(*(buffer.add(2)));
-            let fn_add = std::mem::transmute::<_, fn (&mut RustSample, num: i32)>(*(buffer.add(3)));
-            let fn_sub = std::mem::transmute::<_, fn (&mut RustSample, num: i32)>(*(buffer.add(4)));
-            let fn_append_string_slice = std::mem::transmute::<_, fn (&mut RustSample, s: &str)>(*(buffer.add(5)));
+            let fn_add = std::mem::transmute::<_, fn (&mut RustSample, i32)>(*(buffer.add(3)));
+            let fn_sub = std::mem::transmute::<_, fn (&mut RustSample, i32)>(*(buffer.add(4)));
+            let fn_append_string = std::mem::transmute::<_, fn (&mut RustSample, *const libc::c_char)>(*(buffer.add(5)));
             let fn_print_chars = std::mem::transmute::<_, fn (&RustSample)>(*(buffer.add(6)));
 
             fn_add(&mut *p, 10);
             assert_eq!(fn_get_current_value(&*p), 10);
             fn_sub(&mut *p, 5);
             assert_eq!(fn_get_current_value(&*p), 5);
-            fn_append_string_slice(&mut *p, "test");
+            fn_append_string(&mut *p, std::ffi::CString::new("test").unwrap().as_ptr());
             fn_print_chars(&*p);
-            fn_append_string_slice(&mut *p, "test");
+            fn_append_string(&mut *p, std::ffi::CString::new("test").unwrap().as_ptr());
             fn_print_chars(&*p);
 
             fn_destroy(&mut *p);

@@ -6,19 +6,13 @@ struct RustSample {
 }
 
 impl RustSample {
-    unsafe fn new() -> *mut RustSample {
-        let p = libc::malloc(std::mem::size_of::<RustSample>());
-        let p2 = p as *mut RustSample;
-        if p2 != std::ptr::null_mut::<RustSample>() {
-            libc::memset(p, 0, std::mem::size_of::<RustSample>());
-            *p2 = RustSample { number: 0, str: String::new() };
-        }
-        p2
+    unsafe fn new_raw() -> *mut RustSample {
+        Box::into_raw(Box::new(RustSample { number: 0, str: String::new() }))
     }
 
     fn destroy(&mut self) {
         unsafe {
-            libc::free(self as *mut RustSample as *mut libc::c_void);
+            Box::from_raw(self as *mut RustSample);
         }
     }
 
@@ -70,7 +64,7 @@ pub unsafe extern fn create_rust_sample_instance(buffer: *mut *const (), buffer_
         return 0;
     }
 
-    let instance = RustSample::new() as *const ();
+    let instance = RustSample::new_raw() as *const ();
     if instance == std::ptr::null::<()>() {
         return 0;
     }

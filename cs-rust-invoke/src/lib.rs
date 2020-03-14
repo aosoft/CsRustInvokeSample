@@ -52,7 +52,7 @@ impl RustSample {
 }
 
 #[no_mangle]
-pub unsafe fn create_rust_sample_instance(buffer: *mut *const (), buffer_size: u32) -> u32 {
+pub unsafe extern fn create_rust_sample_instance(buffer: *mut *const (), buffer_size: u32) -> u32 {
     let table = &[
         RustSample::destroy as fn (&mut RustSample) as *const(),
         RustSample::get_current_value as fn (&RustSample) -> i32 as *const(),

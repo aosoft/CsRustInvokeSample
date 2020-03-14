@@ -6,6 +6,16 @@ struct RustSample {
 }
 
 impl RustSample {
+    unsafe fn new() -> *mut RustSample {
+        let p = libc::malloc(std::mem::size_of::<RustSample>());
+        let p2 = p as *mut RustSample;
+        if p2 != std::ptr::null_mut::<RustSample>() {
+            libc::memset(p, 0, std::mem::size_of::<RustSample>());
+            *p2 = RustSample { number: 0, str: String::new() };
+        }
+        p2
+    }
+
     fn destroy(&mut self) {
         unsafe {
             libc::free(self as *mut RustSample as *mut libc::c_void);
@@ -36,18 +46,6 @@ impl RustSample {
 
     fn print_chars(&self) {
         println!("{}", self.str);
-    }
-}
-
-impl RustSample {
-    unsafe fn new() -> *mut RustSample {
-        let p = libc::malloc(std::mem::size_of::<RustSample>());
-        let p2 = p as *mut RustSample;
-        if p2 != std::ptr::null_mut::<RustSample>() {
-            libc::memset(p, 0, std::mem::size_of::<RustSample>());
-            *p2 = RustSample { number: 0, str: String::new() };
-        }
-        p2
     }
 }
 

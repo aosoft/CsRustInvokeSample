@@ -6,8 +6,14 @@ struct RustSample {
 }
 
 impl RustSample {
+    fn new() -> RustSample {
+        RustSample { number: 0, str: String::new() }
+    }
+
     unsafe fn new_raw() -> *mut RustSample {
-        Box::into_raw(Box::new(RustSample { number: 0, str: String::new() }))
+        let p = Box::into_raw(Box::new(RustSample::new()));
+        println!("RustSample.new_raw {:x}", std::mem::transmute::<_, usize>(p));
+        p
     }
 
     fn destroy(&mut self) {
@@ -39,7 +45,15 @@ impl RustSample {
     }
 
     fn print_chars(&self) {
-        println!("{}", self.str);
+        println!("[{:x}] {}", unsafe { std::mem::transmute::<_, usize>(self as *const Self) }, self.str);
+    }
+}
+
+impl Drop for RustSample {
+    fn drop(&mut self) {
+        unsafe {
+            println!("RustSample.drop {:x}", std::mem::transmute::<_, usize>(self as *const Self));
+        }
     }
 }
 
